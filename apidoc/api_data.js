@@ -1,5 +1,46 @@
 define({ "api": [
   {
+    "group": "User",
+    "version": "1.0.0",
+    "type": "post",
+    "url": "/api/v1/users/activate",
+    "title": "User Activate.",
+    "parameter": {
+      "fields": {
+        "Parameter": [
+          {
+            "group": "Parameter",
+            "type": "string",
+            "optional": false,
+            "field": "activateToken",
+            "description": "<p>activateToken of the user. (body params) (required)</p>"
+          }
+        ]
+      }
+    },
+    "success": {
+      "examples": [
+        {
+          "title": "Success-Response:",
+          "content": " {\n    \"error\": false,\n    \"message\": \"Your account is successfully activated\",\n    \"status\": 200,\n    \"data\": {\n        \"n\": 1,\n        \"nModified\": 1,\n        \"ok\": 1\n        }\n    }\n}",
+          "type": "object"
+        }
+      ]
+    },
+    "error": {
+      "examples": [
+        {
+          "title": "Error-Response:",
+          "content": "\n{\n       \"error\": true,\n       \"message\": \"Failed to activate the user\",\n       \"status\": 500,\n       \"data\": null\n      }",
+          "type": "json"
+        }
+      ]
+    },
+    "filename": "app/routes/user.js",
+    "groupTitle": "User",
+    "name": "PostApiV1UsersActivate"
+  },
+  {
     "group": "chat",
     "version": "1.0.0",
     "type": "get",
