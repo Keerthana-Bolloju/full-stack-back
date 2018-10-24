@@ -8,7 +8,7 @@ module.exports.setRouter =(app)=>{
     
     let baseUrl = `${appConfig.apiVersion}/user`;
 
-    app.post(`${baseUrl}/signup`,userController.signup,userController.activateUser);
+    app.post(`${baseUrl}/signup`,userController.signup);
     /**
         * @apiGroup users
         * @apiVersion  1.0.0
@@ -49,7 +49,7 @@ module.exports.setRouter =(app)=>{
        */
 
 
-    app.post(`${baseUrl}/activate`, userController.activateLogin);
+    app.post(`${baseUrl}/activate`, userController.activateUser);
       /**
     * @apiGroup User
     * @apiVersion  1.0.0
