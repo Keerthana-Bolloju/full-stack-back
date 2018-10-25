@@ -590,7 +590,7 @@ let forgotPassword = (req, res) => {
                 res.send(apiResponse)
             } else {
                 logger.info('User Found', 'userController:forgotPassword', 10)
-                mailerLib.autoGenEmail(req.params.email, `Hello <b>${result.firstName} ${result.lastName}</b>!!<br><br>Welcome to ping-Youu.<br>Click here to reset your password <a href='http://localhost:4200/resetPassword/${result.userId}'>Click Here</a> .<br><br>For any Query, drop us a mail at- ping.youu@gmail.com<br><br>Regards<br>Ping-Youu `)
+                mailerLib.autoGenEmail(req.params.email, `Hello <b>${result.firstName} ${result.lastName}</b>!!<br><br>Welcome to ping-Youu.<br>Click here to reset your password <a href='http://ping-you.xyz/resetPassword/${result.userId}'>Click Here</a> .<br><br>For any Query, drop us a mail at- ping.youu@gmail.com<br><br>Regards<br>Ping-Youu `)
                 let apiResponse = response.generate(false, 'user found with this email', 200, 'Mail sent successfully')
                 res.send(apiResponse)
             }
