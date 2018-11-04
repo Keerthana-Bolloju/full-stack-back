@@ -30,7 +30,12 @@ let chatSchema = new Schema(
         },
         chatRoom:{
             type:String,
-            default:'PingYou'
+            default:''
+        },
+        
+        chatRoomTitle: { 
+            type: String, 
+            default: '' 
         },
         seen:{
             type:Boolean,

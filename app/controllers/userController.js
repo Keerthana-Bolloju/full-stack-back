@@ -9,7 +9,7 @@ const check = require('./../libs/checkLib')
 const token = require('./../libs/tokenLib')
 const shortid = require('shortid')
 const mailerLib = require('./../libs/mailerLib')
-
+const uuid = require('uuid')
 //importing models
 const UserModel = mongoose.model('User')
 const AuthModel = mongoose.model('Auth')
@@ -55,6 +55,7 @@ let signUp = (req, res) => {
                             mobile: req.body.mobile,
                             email: req.body.email.toLowerCase(),
                             password: passwordLib.hashPassword(req.body.password),
+                            activateUserToken: uuid.v4(),
                             createdOn: time.now()
                         });
 
@@ -315,7 +316,7 @@ let deleteUser = (req, res) => {
 
     let deleteAUser = () => {
         return new Promise((resolve, reject) => {
-            UserModel.remove({ userId: req.params.userId }, (err, result) => {
+            UserModel.findOneAndRemove({ userId: req.params.userId }, (err, result) => {
                 if (err) {
                     console.log(err)
                     logger.error(err.message, 'user Controller: deleteUser', 10)
@@ -373,7 +374,7 @@ let editUser = (req, res) => {
 //function to logout
 let logout = (req, res) => {
     console.log('Logged out successfully')
-    AuthModel.remove({ userId: req.user.userId })
+    AuthModel.findOneAndRemove({ userId: req.user.userId })
         .select('-_id -__v')
         .exec((err, result) => {
             if (err) {
@@ -395,180 +396,50 @@ let logout = (req, res) => {
 
 
 //function for activate user
-let activateUser = (req,res) =>{
-    
-    //sending a activate email link to registered email
-    if (check.isEmpty(req.params.email)) {
-        logger.error('email parameter is missing', 'userCOntroller:activateUser', 10)
-        let apiResponse = response.generate(true, 'email parameter is missing', 400, null)
-        response.send(apiResponse)
-    } else {
-        UserModel.findOne({ email: req.params.email }, (err, result) => {
-            if (err) {
-                logger.error('failed to find email', 'userController:activateUser', 10)
-                let apiResponse = response.generate(true, 'failed to find user with this email', 400, null)
-                res.send(apiResponse)
-            } else if (check.isEmpty(result)) {
-                logger.error('No user found', 'userController:activateUser', 10)
-                let apiResponse = response.generate(true, 'no user found', 404, null)
-                res.send(apiResponse)
-            } else {
-                logger.info('User Found', 'userController:activateUser', 10)
-                mailerLib.autoGenEmail(req.params.email, `Hello <b>${result.firstName} ${result.lastName}</b>!!<br><br>Welcome to ping-Youu.<br>Click here to conform and activate your account  <a href='http://localhost:4200/activate/${result.userId}'>Click Here</a> .<br><br>For any Query, drop us a mail at- ping.youu@gmail.com<br><br>Regards<br>Ping-Youu `)
-                let apiResponse = response.generate(false, 'user found with this email', 200, 'Mail sent successfully')
-                res.send(apiResponse)
-            }
-        })
-    }    
-
-}//end activate account
-
-
-//activate login
-let activateLogin = (req,res)=>{
-    //finding user in database
-    let findUser = () => {
-        console.log('find user')
+let activateUser = (req, res) => {
+    let validateUserInput = () => {
         return new Promise((resolve, reject) => {
-            if (req.body.email) {
-                console.log('req.body.email is there in the database')
-                console.log(req.body)
-                UserModel.findOne({ email: req.body.email }, (err, userdetails) => {
-    
-                    //handling error if user is not found
-                    if (err) {
-                        logger.error(err.message, 'userController:findUser()', 10)
-                        let apiResponse = response.generate(true, 'failed to find user details', 500, null)
-                        reject(apiResponse)
-                    } else if (check.isEmpty(userdetails)) {
-                        let apiResponse = response.generate(true, 'no user details found', 500, null)
-                        reject(apiResponse)
-                    } else {
-                        logger.info('user found', 'user details found', 10)
-                        resolve(userdetails)
-                    }
-                })
-            } else {
-                let apiResponse = response.generate(true, 'email parameter is missing', 400, null)
+            if (check.isEmpty(req.body.activateToken)) {
+                let apiResponse = response.generate(true, 'activateToken parameter is missing', 400, null)
                 reject(apiResponse)
+            } else {
+                resolve()
             }
         })
-    }//end find user
-    
-    //validating password
-    let passwordValidation = (foundUserDetails) => {
-        console.log('validating password')
+    }
+    let activateUser = () => {
         return new Promise((resolve, reject) => {
-            passwordLib.comparePassword(req.body.password, foundUserDetails.password, (err, isMatch) => {
-    
-                if (err) {
-                    logger.error(err.message, 'UserController:passwordValidation', 10)
-                    let apiResponse = response.generate(true, 'Login failed', 500, null)
-                    reject(apiResponse)
-                } else if (isMatch) {
-                    let getUserDetailsFound = foundUserDetails.toObject()
-                    delete getUserDetailsFound.password
-                    delete getUserDetailsFound._id
-                    delete getUserDetailsFound.__v
-                    delete getUserDetailsFound.createdOn
-                    resolve(getUserDetailsFound)
-                } else {
-                    let apiResponse = response.generate(true, 'password doesnt match,Login failed', 404, null)
-                    reject(apiResponse)
-                }
-            })
-        });
-    }//end validating password
-    
-    //token generation
-    let generateToken = (userdetails) => {
-        console.log('token generation')
-        return new Promise((resolve, reject) => {
-            token.generateToken(userdetails, (err, tokenDetails) => {
-    
+            UserModel.update({ activateUserToken: req.body.activateToken }, { $unset: { activateUserToken: 1 }, active: true }, (err, result) => {
                 if (err) {
                     console.log(err)
-                    let apiResponse = response.generate(true, 'failed to generate token', 500, null)
+                    logger.error('Failed to Retrieve User Data', 'User Controller : activateUser', 5)
+                    let apiResponse = response.generate(true, 'Failed to activate the user', 400, null)
+                    reject(apiResponse)
+                } else if (result.n === 0) {
+                    logger.error('No User Found', 'User Controller : activateUser', 5)
+                    let apiResponse = response.generate(true, 'No User Details Found', 400, null)
                     reject(apiResponse)
                 } else {
-                    tokenDetails.userId = userdetails.userId,
-                        tokenDetails.userdetails = userdetails
-                    resolve(tokenDetails)
-                }
-            });
-        });
-    }//end token generation
-    
-    //code for saving generated token, if already generated then updating the token when expired
-    let saveToken = (tokenDetails) => {
-        console.log('saving token')
-        return new Promise((resolve, reject) => {
-            AuthModel.findOne({ userId: tokenDetails.userId }, (err, authTokenDetailsFound) => {
-    
-                if (err) {
-                    logger.error(err.message, 'userController:saveToken', 10)
-                    let apiResponse = response.generate(true, 'failed to save generated token', 400, null)
-                    reject(apiResponse)
-                } else if (check.isEmpty(authTokenDetailsFound)) {
-                    let newAuthToken = new AuthModel({
-                        userId: tokenDetails.userId,
-                        authToken: tokenDetails.token,
-                        tokenSecret: tokenDetails.tokenSecret,
-                        tokenGenerationTime: time.now()
-                    })
-                    newAuthToken.save((err, newAuthTokenDetails) => {
-                        if (err) {
-                            logger.error(err.message, 'userController:saveToken', 10)
-                            let apiResponse = response.generate(true, 'failed to save token details', 400, null)
-                            reject(apiResponse)
-                        } else {
-                            let responseBody = {
-                                authToken: newAuthTokenDetails.authToken,
-                                userdetails: tokenDetails.userdetails
-                            }
-                            mailerLib.autoGenEmail(userDetails.email,`<b> Hi ${userDetails.firstName} ${userDetails.lastName},<br><br> Your account has been activated succesfully.</b><br><br>For any Query, drop us a mail at- ping.youu@gmail.com<br><br>Regards<br>Ping-Youu`)
-                            resolve('Account Activated Successful')
-                            resolve(responseBody)
-                        }
-                    })
-                } else {
-                    authTokenDetailsFound.authToken = tokenDetails.token,
-                        authTokenDetailsFound.tokenSecret = tokenDetails.tokenSecret,
-                        authTokenDetailsFound.tokenGenerationTime = time.now()
-                    authTokenDetailsFound.save((err, newAuthTokenDetails) => {
-                        if (err) {
-                            logger.error(err.message, 'userController:saveToken', 10)
-                            let apiResponse = response.generate(true, 'failed to save token details', 400, null)
-                            reject(apiResponse)
-                        } else {
-                            let responseBody = {
-                                authToken: newAuthTokenDetails.authToken,
-                                userdetails: tokenDetails.userdetails
-                            }
-                            mailerLib.autoGenEmail(userDetails.email,`<b> Hi ${userDetails.firstName} ${userDetails.lastName},<br><br> Your account has been activated succesfully.</b><br><br>For any Query, drop us a mail at- ping.youu@gmail.com<br><br>Regards<br>Ping-Youu`)
-                            resolve('Account Activated Successful')
-                            resolve(responseBody)
-                        }
-                    })
+                    resolve(result)
                 }
             })
-        });
+        })
     }
-    //calling functions
-    findUser(req, res)
-        .then(passwordValidation)
-        .then(generateToken)
-        .then(saveToken)
+    validateUserInput(req, res)
+        .then(activateUser)
         .then((resolve) => {
-            let apiResponse = response.generate(false, 'Login Successfull', 200, resolve)
+            let apiResponse = response.generate(false, 'Your account is successfully activated', 200, resolve)
             res.status(200)
             res.send(apiResponse)
         })
         .catch((err) => {
-            console.log(err)
             res.send(err)
         })
-    }//end activate Login
+}
+//end activate account
+
+
+
 
 
 //function for forgot password
@@ -681,6 +552,5 @@ module.exports = {
     logout: logout,
     forgotpassword: forgotPassword,
     resetPassword: resetPassword,
-    activateUser:activateUser,
-    activateLogin:activateLogin
+    activateUser:activateUser
 }

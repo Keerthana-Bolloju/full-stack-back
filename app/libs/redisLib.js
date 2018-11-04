@@ -2,9 +2,9 @@ const check = require('./checkLib')
 const redis = require('redis')
 
 let client = redis.createClient({
-    url: 'redis://redis-12621.c62.us-east-1-4.ec2.cloud.redislabs.com:12621'
+    url: 'redis://redis-19246.c83.us-east-1-2.ec2.cloud.redislabs.com:19246'
 });
-client.auth("KeerthanaBolloju_421@dev");
+client.auth("uno5lGSJ9paSzzIg3b7yOQGDOgBVGs9J");
 
 
 client.on('connect',()=>{
